@@ -1,0 +1,101 @@
+trigger:
+  enabled: false
+pr:
+  enabled: false
+schedules:
+- cron: "0 8 * * *"
+  displayName: "Daily BDD Cucumber Tests"
+  branches:
+    include:
+    - main
+  always: true
+variables:
+- name: projectDir
+  value: "$(Build.SourcesDirectory)/SauceLabs-main"
+- name: allureResultsDir
+  value: "$(Build.SourcesDirectory)/SauceLabs-main/target/allure-results"
+- name: appEmail
+  value: "noreply@wales.nhs.uk"
+- name: appPassword
+  value: "<YourAppPassword>"
+stages:
+- stage: BDDTests
+  displayName: "BDD Tests"
+  jobs:
+  - job: RunBDD
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+    - task: CmdLine@2
+      displayName: "Ensure Allure Results Folder Exists"
+      inputs:
+        script: |
+          mkdir -p "$(allureResultsDir)"
+    - task: Maven@3
+      displayName: "Run BDD Cucumber Tests"
+      inputs:
+        mavenPomFile: "$(projectDir)/pom.xml"
+        goals: "clean test"
+        javaHomeOption: JDKVersion
+        jdkVersionOption: 17
+        publishJUnitResults: true
+        testResultsFiles: "**/surefire-reports/*.xml"
+      env:
+        CI: "true"
+    - task: CmdLine@2
+      displayName: "Verify Allure Results"
+      condition: always()
+      inputs:
+        script: |
+          echo "Checking Allure results..."
+          ls -la "$(allureResultsDir)" || true
+    - task: PublishAllureReport@1
+      displayName: "Publish Allure Report (ADO Tab)"
+      condition: always()
+      inputs:
+        testResultsDir: "$(allureResultsDir)"
+        reportTitle: "BDD Cucumber Allure Report"
+    - task: CmdLine@2
+      displayName: "Ensure Allure History Folder Exists"
+      inputs:
+        script: |
+          mkdir -p "$(allureResultsDir)/history"
+    - task: PublishPipelineArtifact@1
+      displayName: "Save Allure History for Trends"
+      condition: always()
+      inputs:
+        targetPath: "$(allureResultsDir)/history"
+        artifact: "AllureHistory"
+    - task: PowerShell@2
+      displayName: "Send Pipeline Execution Email"
+      condition: always()
+      inputs:
+        targetType: 'inline'
+        script: |
+          $smtpServer = "smtp.office365.com"
+          $smtpPort = 587
+          $from = "$(appEmail)"
+          $to = "arjun2@wales.nhs.uk"
+          $subject = "BDD Pipeline Execution - Build $($env:BUILD_BUILDID)"
+          $body = "Pipeline $($env:BUILD_DEFINITIONNAME) completed on $($env:BUILD_SOURCEBRANCHNAME). Status: $($env:BUILD_STATUS)`nAllure report: $($env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI)$($env:SYSTEM_TEAMPROJECT)/_build/results?buildId=$($env:BUILD_BUILDID)&view=alluresummary"
+
+          try {
+              $message = New-Object System.Net.Mail.MailMessage
+              $message.From = $from
+              $to.Split(",") | ForEach-Object { $message.To.Add($_) }
+              $message.Subject = $subject
+              $message.Body = $body
+
+              $smtp = New-Object Net.Mail.SmtpClient($smtpServer, $smtpPort)
+              $smtp.EnableSsl = $true
+              $smtp.Credentials = New-Object System.Net.NetworkCredential($from,"$(appPassword)")
+              $smtp.Send($message)
+              Write-Host "Email sent successfully to $to"
+          }
+          catch {
+              Write-Host "Failed to send email: $_"
+          }
+
