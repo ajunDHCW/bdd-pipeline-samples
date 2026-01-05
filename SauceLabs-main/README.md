@@ -1,7 +1,7 @@
-# Pipeline Sample-DHCW Test Automation Framework
+# Pipeline Sample - DHCW Test Automation Framework
 
 ## Overview
-This project is a web test automation framework built with Selenium, sJava, Maven, Cucumber (BDD), JUnit, and Allure for reporting. It is designed for scalable, maintainable, and efficient automated testing of web applications.
+This project is a web test automation framework built with Selenium, Java, Maven, Cucumber (BDD), JUnit, and Allure for reporting. It is designed for scalable, maintainable, and efficient automated testing of web applications.
 
 ---
 
@@ -25,7 +25,6 @@ src/test/java/utility - this folder contains utility classes like Helper methods
 src/test/resources/properties - this folder contains properties files for locators and test data.
 target/allure-results/ - this folder contains the results for Allure reports.
 target/allure-report/ - this folder contains the generated Allure report.
-
 ```
 
 ---
@@ -41,9 +40,9 @@ target/allure-report/ - this folder contains the generated Allure report.
 ---
 
 ## Test Reports
-- **Allure Report**: After test execution, the reports will be saved in target/allure-report folder.
+- **Allure Report**: After test execution, the reports will be saved in `target/allure-report` folder.
 - To view the Allure report:
-1. Open the file: `target/allure-report/index.html` in a web browser.
+  1. Open the file: `target/allure-report/index.html` in a web browser.
 
 ---
 
@@ -58,5 +57,18 @@ target/allure-report/ - this folder contains the generated Allure report.
 
 ---
 
-*Last updated: October 15, 2025*
+# Allure Pipeline Integration
 
+## Overview
+The pipeline automates BDD test execution and publishes Allure reports in Azure DevOps. It includes:
+- Scheduled runs
+- Maven build and test execution
+- Allure report publishing
+- Email notifications
+
+---
+
+## Key Notes
+- Store `appPassword` as a secret in Azure DevOps.
+- Ensure Allure plugin is installed in Azure DevOps.
+- Validate SMTP settings for email notifications.
